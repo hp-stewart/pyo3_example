@@ -155,20 +155,13 @@ fn python_function_from_file() -> PyResult<()> {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
         let path = Path::new("functions.py");
-        let display = path.display();
 
         // Open the path in read-only mode, returns `io::Result<File>`
-        let mut file = match File::open(&path) {
-            Err(why) => panic!("couldn't open {}: {}", display, why), // dont use panic, try changing the error to pyError or use unwrap
-            Ok(file) => file,
-        };
+        let mut file =  File::open(&path).unwrap();
 
         // Read the file contents into a mutable String object, returns `io::Result<usize>`
         let mut s = String::new();
-        match file.read_to_string(&mut s) {
-            Err(why) => panic!("couldn't read {}: {}", display, why),
-            Ok(_) => print!("{} contains:\n{}\n--------------------------------\n", display, s),
-        }
+        file.read_to_string(&mut s).unwrap();
 
         // create PyModule from contents of file
         // this is used to access individual functions separately
@@ -199,20 +192,13 @@ fn python_function_from_file_updated() -> PyResult<i32> {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
         let path = Path::new("functions.py");
-        let display = path.display();
 
         // Open the path in read-only mode, returns `io::Result<File>`
-        let mut file = match File::open(&path) {
-            Err(why) => panic!("couldn't open {}: {}", display, why), // dont use panic, try changing the error to pyError or use unwrap
-            Ok(file) => file,
-        };
+        let mut file = File::open(&path).unwrap();
 
         // Read the file contents into a mutable String object, returns `io::Result<usize>`
         let mut s = String::new();
-        match file.read_to_string(&mut s) {
-            Err(why) => panic!("couldn't read {}: {}", display, why),
-            Ok(_) => print!("{} contains:\n{}\n--------------------------------\n", display, s),
-        }
+        file.read_to_string(&mut s).unwrap();
 
         // create PyModule from contents of file
         // this is used to access individual functions separately
@@ -226,14 +212,7 @@ fn python_function_from_file_updated() -> PyResult<i32> {
         // import and run functions from the module
         let add_function = functions.getattr("add_numbers").unwrap();
         let args = PyTuple::new(py, &[45,33]);
-        let function_result = match add_function.call1(args) {
-            Ok(num) => {
-                println!("\n--------------------------------\nThe sum is {}", num);
-                num.extract()? // convert python object to rust type
-            },
-            Err(_) => panic!("Error occured furind python function"),
-
-        }; 
+        let function_result:i32 = add_function.call1(args).unwrap().extract()?;
         
         //return the string result
         Ok(function_result)
