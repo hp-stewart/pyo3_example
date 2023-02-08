@@ -1,3 +1,4 @@
+use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::fs::File;
@@ -15,7 +16,7 @@ use pyo3::types::IntoPyDict;
 
 fn main() {
     // for troubleshooting--displays local python packages
-    pip_list();
+    display_package_info();
 
     // each of the following examples shows a different way to call Python from Rust
     println!("\nExample 1: simple inline code");
@@ -57,9 +58,32 @@ fn main() {
 
 // Misc Helper functions
 
-fn pip_list() {
-    let output = Command::new("bash").arg("-c").arg("pip3 freeze --local").output().expect("bash command failed");
-    println!("Pip list: {output:?}");
+fn display_package_info() {
+    println!("\nRunning PIP to see packages...");
+
+    let output = Command::new("bash")
+        .args(["-c","pip3 list"])
+        .output()
+        .expect("bash command failed");
+    println!("Pip list: \n\tStatus: {:?}",output.status);
+    io::stdout().write_all(&output.stdout).unwrap();
+    io::stderr().write_all(&output.stderr).unwrap();
+
+
+    let output = Command::new("bash")
+        .arg("-c")
+        .arg("pip3 freeze --local")
+        .output()
+        .expect("bash command failed");
+    println!("Pip Freeze Local: \n\tStatus: {:?}",output.status);
+    match output.stdout.len() {
+        0 =>println!("No virtual environment active"),
+        _=> {
+            io::stdout().write_all(&output.stdout).unwrap();
+            io::stderr().write_all(&output.stderr).unwrap();
+        }
+    }
+
 }
 
 fn get_py_file_contents(file_name:&str) -> String {
@@ -296,15 +320,24 @@ fn python_function_from_file() -> PyResult<i32> {
         ).unwrap();
 
         // grab the desired function using .getattr("function_name")
+        // call the function using .call0() exe without args (or in this case use default args)
+        println!("\nDemo#5.1 Call function without args\nEvaluating...\n-----start of py output-----\n");
+        let add_function = functions.getattr("add_numbers").unwrap();
+        let function_result = add_function.call0().unwrap(); // instead of unwrap, try to handle the pyresult directly?
+        println!("\n-----end of py output-----\n");
+        // the values we got from python can now be used in Rust
+        println!("\nRust Output:\n\tThe sum is {}", function_result);
+
+        // grab the desired function using .getattr("function_name")
         // then create some args and call the function using .call1(args)
-        println!("\nEvaluating...\n-----start of py output-----\n");
+        println!("\nDemo#5.2 Call function with PyTuple args\nEvaluating...\n-----start of py output-----\n");
         let add_function = functions.getattr("add_numbers").unwrap();
         let args = PyTuple::new(py, &[11,23]);
         let function_result = add_function.call1(args).unwrap().extract()?; // instead of unwrap, try to handle the pyresult directly?
-        println!("\n-----end of py output-----\nEvaluation completed");
-
+        println!("\n-----end of py output-----\n");
         // the values we got from python can now be used in Rust
         println!("\nRust Output:\n\tThe sum is {}", function_result);
+
 
         //return the string result
         Ok(function_result)
