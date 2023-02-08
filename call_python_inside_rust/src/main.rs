@@ -3,6 +3,7 @@ use std::path::Path;
 use std::fs::File;
 use std::collections::HashMap;
 
+use std::process::Command; // used to do "$pip list" from inside Rust
 
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
@@ -13,6 +14,8 @@ use pyo3::types::IntoPyDict;
 // starting point
 
 fn main() {
+    // for troubleshooting--displays local python packages
+    pip_list();
 
     // each of the following examples shows a different way to call Python from Rust
     println!("\nExample 1: simple inline code");
@@ -53,6 +56,11 @@ fn main() {
 }
 
 // Misc Helper functions
+
+fn pip_list() {
+    let output = Command::new("bash").arg("-c").arg("pip3 freeze --local").output().expect("bash command failed");
+    println!("Pip list: {output:?}");
+}
 
 fn get_py_file_contents(file_name:&str) -> String {
     // first we need to grab the python code from a local file
