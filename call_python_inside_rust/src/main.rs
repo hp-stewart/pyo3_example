@@ -17,42 +17,42 @@ use pyo3::types::IntoPyDict;
 fn main() {
     // for troubleshooting--displays local python packages
     display_package_info();
-
+    println!("\n----------Begin PYO3 example functions -------------------------------------\n");
     // each of the following examples shows a different way to call Python from Rust
     println!("\nExample 1: simple inline code");
     let _r1 = match simple_inline_python_code() {
         Ok(_) =>     println!("Py Function 1 success!!!\n"),
         Err(_) =>     println!("Py Function 1 failed...\n"),
     };
-    println!("\nEnd of Example 1\n\n--------------------------------------------------\n");
+    println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 2: inline code + library import");
     let _r2 = match print_python_version() {
         Ok(_) =>     println!("Py Function 2 success!!!\n"),
         Err(_) =>     println!("Py Function 2 failed...\n"),
     };
-    println!("\nEnd of Example 2\n\n--------------------------------------------------\n");
+    println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 3:  No args, vs PyTuple args, vs rust tuple args");
     let _r3 = match python_function_with_args() {
         Ok(_) =>     println!("Py Function 3 success!!!\n"),
         Err(_) =>     println!("Py Function 3 failed...\n"),
     };
-    println!("\nEnd of Example 3\n\n--------------------------------------------------\n");
+    println!("\nEnd\n--------------------------------------------------\n");
     
     println!("\nExample 4: kwargs as PyDict, Vec, or Hashmap");
     let _r4 = match python_function_with_kwargs() {
         Ok(_) =>     println!("Py Function 4 success!!!\n"),
         Err(_) =>     println!("Py Function 4 failed...\n"),
     };
-    println!("\nEnd of Example 4\n\n--------------------------------------------------\n");
+    println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 5: call from local .py file");
     let _r5 = match python_function_from_file() {
         Ok(n) =>     println!("Py Function 5 success!! \nThe result was {n:?} \n"),
         Err(e) =>     println!("Py Function 5 failed because {e}...\n"),
     };
-    println!("\nEnd of Example 5\n\n--------------------------------------------------\n");
+    println!("\nEnd\n--------------------------------------------------\n");
 
 }
 
@@ -61,23 +61,25 @@ fn main() {
 fn display_package_info() {
     println!("\nRunning PIP to see packages...");
 
+    println!("\nGlobal Packages:");
     let output = Command::new("bash")
         .args(["-c","pip3 list"])
         .output()
         .expect("bash command failed");
-    println!("Pip list: \n\tStatus: {:?}",output.status);
+    println!("Pip list \tstatus: {:?}",output.status);
     io::stdout().write_all(&output.stdout).unwrap();
     io::stderr().write_all(&output.stderr).unwrap();
 
 
+    println!("\nLocal Packages:");
     let output = Command::new("bash")
         .arg("-c")
         .arg("pip3 freeze --local")
         .output()
         .expect("bash command failed");
-    println!("Pip Freeze Local: \n\tStatus: {:?}",output.status);
+    println!("pip freeze --local:\tStatus: {:?}",output.status);
     match output.stdout.len() {
-        0 =>println!("No virtual environment active"),
+        0 =>println!("No virtual environment detected\nNo packages to display"),
         _=> {
             io::stdout().write_all(&output.stdout).unwrap();
             io::stderr().write_all(&output.stderr).unwrap();
