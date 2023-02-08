@@ -31,7 +31,7 @@ fn main() {
         Err(e) =>     println!("Py Function 5 failed because {e}...\n"),
     };
     let _r6 = match python_function_from_file_updated() {
-        Ok(_) =>     println!("Py Function 6 success!! \n"),
+        Ok(n) =>     println!("Py Function 6 success!! The result was {n:?} \n"),
         Err(e) =>     println!("Py Function 6 failed because {e}...\n"),
     };
 
@@ -218,3 +218,4 @@ fn python_function_from_file_updated() -> PyResult<i32> {
         Ok(function_result)
     })
 }
+
