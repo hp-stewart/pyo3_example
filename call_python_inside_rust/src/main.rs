@@ -313,7 +313,7 @@ fn python_function_from_file() -> PyResult<i32> {
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
-        let code = get_py_file_contents("functions.py"); 
+        let code = get_py_file_contents("py/functions.py"); 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
         
         // create PyModule from contents of file
@@ -359,7 +359,7 @@ fn python_function_err_handling()-> PyResult<i32> {
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
-        let code = get_py_file_contents("functions.py"); 
+        let code = get_py_file_contents("py/functions.py"); 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
         
         // create PyModule from contents of file
@@ -396,7 +396,7 @@ fn python_function_venv()-> PyResult<i32> {
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
-        let code = get_py_file_contents("functions_venv.py"); 
+        let code = get_py_file_contents("py/functions_venv.py"); 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
         
         // attempt create PyModule from contents of file
