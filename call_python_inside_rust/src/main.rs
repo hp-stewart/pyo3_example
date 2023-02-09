@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
 use pyo3::types::IntoPyDict;
-
+use pyo3::exceptions::PyBaseException;
 
 // starting point
 
@@ -61,6 +61,13 @@ fn main() {
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
+    println!("\nExample 7: functions requiring packages installed on venv");
+    let _r5 = match python_function_venv() {
+        Ok(n) =>     println!("Py Function 7 success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("Py Function 7 failed because {e}...\n"),
+    };
+    println!("\nEnd\n--------------------------------------------------\n");
+
 }
 
 // Misc Helper functions
@@ -68,23 +75,13 @@ fn main() {
 fn display_package_info() {
     println!("\nRunning PIP to see packages...");
 
-    println!("\nGlobal Packages:");
-    let output = Command::new("bash")
-        .args(["-c","pip3 list"])
-        .output()
-        .expect("bash command failed");
-    println!("Pip list \tstatus: {:?}",output.status);
-    io::stdout().write_all(&output.stdout).unwrap();
-    io::stderr().write_all(&output.stderr).unwrap();
-
-
     println!("\nLocal Packages:");
     let output = Command::new("bash")
         .arg("-c")
         .arg("pip3 freeze --local")
         .output()
         .expect("bash command failed");
-    println!("pip freeze --local:\tStatus: {:?}",output.status);
+    println!("pip3 freeze --local:\tStatus: {:?}",output.status);
     match output.stdout.len() {
         0 =>println!("No virtual environment detected\nNo packages to display"),
         _=> {
@@ -389,3 +386,68 @@ fn python_function_err_handling()-> PyResult<i32> {
         Ok(function_result)
     })
 }
+
+// Example 7
+// Python functions that require packages installed on a virtual environment
+fn python_function_venv()-> PyResult<i32> {
+    
+    // Initialize Python interpreter and acquire Global Interpreter Lock
+    println!("\nInitializing py interpreter...");
+    Python::with_gil(|py| {
+        // first we need to grab the python code from a local file
+        // Create a path to the desired file
+        let code = get_py_file_contents("functions_venv.py"); 
+        println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
+        
+        // attempt create PyModule from contents of file
+        // this is used to access individual functions separately
+        let functions = PyModule::from_code(
+            py,
+            &code,
+            "functions.py",
+            "functions"
+        );
+        // check if python module was created successfully
+        let mut success = true;
+        match &functions {
+            Ok(_)=> {
+                println!("Successfully loaded module using venv")
+            },
+            Err(e)=>{ 
+                success = false;
+                println!("Failed to load module: \n\t{e}")
+            }
+        }
+        // it wasnt successful, we probably are not in the correct environment
+        if success !=true {
+            return Err(PyErr::new::<PyBaseException, _>("Failed to create py module"));
+        }
+        let functions = functions.unwrap();
+
+        // now will deal with the python imports, bringing them into the module
+        let _rand_module = py.import("random")?;
+        let _emoji_module = py.import("emoji")?;
+        functions.add("random", _rand_module).unwrap();
+        functions.add("emoji", _emoji_module).unwrap();
+        
+        // Example 1: display emoji 
+        println!("\nDemo#7.1\nEvaluating...\n-----start of py output-----\n");
+        let emoji_function = functions.getattr("emoji_test").unwrap();
+        emoji_function.call0().unwrap();
+        println!("\n-----end of py output-----\n");
+      
+        // example 2 - random number
+        println!("\nDemo#7.2\nEvaluating...\n-----start of py output-----\n");
+        let rand_function = functions.getattr("random_number").unwrap();
+        let args = PyTuple::new(py, &[0,50]);
+        let function_result:i32 = rand_function.call1(args).unwrap().extract()?;
+        println!("A random number {}", function_result);
+        println!("\n-----end of py output-----\n");
+        
+        Ok(function_result)
+    })
+}
+
+
+
+
