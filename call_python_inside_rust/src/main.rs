@@ -54,6 +54,13 @@ fn main() {
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
+    println!("\nExample 6: error handling");
+    let _r5 = match python_function_err_handling() {
+        Ok(n) =>     println!("Py Function 6 success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("Py Function 6 failed because {e}...\n"),
+    };
+    println!("\nEnd\n--------------------------------------------------\n");
+
 }
 
 // Misc Helper functions
@@ -340,9 +347,45 @@ fn python_function_from_file() -> PyResult<i32> {
         // the values we got from python can now be used in Rust
         println!("\nRust Output:\n\tThe sum is {}", function_result);
 
-
         //return the string result
         Ok(function_result)
     })
 }
 
+
+// Example 6
+// 
+fn python_function_err_handling()-> PyResult<i32> {
+    
+    // Initialize Python interpreter and acquire Global Interpreter Lock
+    println!("\nInitializing py interpreter...");
+    Python::with_gil(|py| {
+        // first we need to grab the python code from a local file
+        // Create a path to the desired file
+        let code = get_py_file_contents("functions.py"); 
+        println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
+        
+        // create PyModule from contents of file
+        // this is used to access individual functions separately
+        let functions = PyModule::from_code(
+            py,
+            &code,
+            "functions.py",
+            "functions"
+        ).unwrap();
+
+        // wrong type (float) args
+        println!("\nDemo#6.1 Call function with wrong type args(f32)\nEvaluating...\n-----start of py output-----\n");
+        let add_function = functions.getattr("add_numbers").unwrap();
+        let args = PyTuple::new(py, &['a','b']);
+        let function_result = add_function.call1(args).unwrap().extract()?; // instead of unwrap, try to handle the pyresult directly?
+        println!("\n-----end of py output-----\n");
+        
+
+        // the values we got from python can now be used in Rust
+        println!("\nRust Output:\n\tThe sum is {}", function_result);
+
+        //return the result
+        Ok(function_result)
+    })
+}

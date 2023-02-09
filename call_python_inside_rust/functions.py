@@ -1,4 +1,4 @@
-def add_numbers(a:int=1, b:int=2):
+def add_numbers(a:int=1, b:int=2) -> int:
     print("this is a function in python to add two numbers:")
     result:int = a + b
     print(a, " + ", b, " = ", result)
