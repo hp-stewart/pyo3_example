@@ -9,3 +9,7 @@ def random_number(a: int = 0, b: int = 100)-> int:
 
 def emoji_test():
     print(emoji.emojize('Rust is :thumbs_up:'))
+
+if __name__=="__main__":
+    random_number()
+    emoji_test()

@@ -12,9 +12,12 @@ use pyo3::types::PyTuple;
 use pyo3::types::IntoPyDict;
 use pyo3::exceptions::PyBaseException;
 
+use pyo3_build_config::{BuildFlags, PythonVersion, PythonImplementation};
+
 // starting point
 
 fn main() {
+    pyo3::prepare_freethreaded_python();
     // for troubleshooting--displays local python packages
     display_package_info();
     println!("\n----------Begin PYO3 example functions -------------------------------------\n");
@@ -73,8 +76,8 @@ fn main() {
 // Misc Helper functions
 
 fn display_package_info() {
+    
     println!("\nRunning PIP to see packages...");
-
     println!("\nLocal Packages:");
     let output = Command::new("bash")
         .arg("-c")
@@ -92,6 +95,21 @@ fn display_package_info() {
 
 }
 
+fn _configure_py_for_venv() -> pyo3_build_config::InterpreterConfig {
+    pyo3_build_config::InterpreterConfig{
+        implementation: PythonImplementation::CPython,
+        version: PythonVersion{major:3, minor:10},
+        shared: true,
+        abi3: false,
+        lib_name:Some(String::from("python3.10")),
+        lib_dir:Some(String::from("/home/hstewart/repos/pyo3_example/call_python_inside_rust/env/lib")),
+        executable:Some(String::from("/home/hstewart/repos/pyo3_example/call_python_inside_rust/env/bin/python3.10")),
+        pointer_width: Some(64),
+        build_flags: BuildFlags::default(),
+        suppress_build_script_link_lines: false,
+        extra_build_script_lines: vec![],
+    }
+}
 fn get_py_file_contents(file_name:&str) -> String {
     // first we need to grab the python code from a local file
     // Create a path to the desired file
@@ -393,7 +411,10 @@ fn python_function_venv()-> PyResult<i32> {
     
     // Initialize Python interpreter and acquire Global Interpreter Lock
     println!("\nInitializing py interpreter...");
+    let itpr_config = _configure_py_for_venv();
+    let libs = itpr_config.generate_import_libs();
     Python::with_gil(|py| {
+        
         // first we need to grab the python code from a local file
         // Create a path to the desired file
         let code = get_py_file_contents("py/functions_venv.py"); 
