@@ -407,29 +407,10 @@ fn python_function_venv()-> PyResult<i32> {
             "functions.py",
             "functions"
         );
-        // check if python module was created successfully
-        let mut success = true;
-        match &functions {
-            Ok(_)=> {
-                println!("Successfully loaded module using venv")
-            },
-            Err(e)=>{ 
-                success = false;
-                println!("Failed to load module: \n\t{e}")
-            }
-        }
-        // it wasnt successful, we probably are not in the correct environment
-        if success !=true {
-            return Err(PyErr::new::<PyBaseException, _>("Failed to create py module"));
-        }
+
         let functions = functions.unwrap();
 
-        // now will deal with the python imports, bringing them into the module
-        let _rand_module = py.import("random")?;
-        let _emoji_module = py.import("emoji")?;
-        functions.add("random", _rand_module).unwrap();
-        functions.add("emoji", _emoji_module).unwrap();
-        
+
         // Example 1: display emoji 
         println!("\nDemo#7.1\nEvaluating...\n-----start of py output-----\n");
         let emoji_function = functions.getattr("emoji_test").unwrap();
