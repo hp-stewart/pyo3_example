@@ -11,11 +11,15 @@ use std::fs::FileType;
 
 use std::process::Command; // used to do "$pip list" from inside Rust
 
+use pyo3::exceptions::PyModuleNotFoundError;
+use pyo3::exceptions::PySyntaxError;
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
 use pyo3::types::IntoPyDict;
 use pyo3::exceptions::PyBaseException;
+use pyo3::types::PyType;
 
 // starting point
 
@@ -484,31 +488,34 @@ fn python_function_venv_a()-> PyResult<i32> {
             "functions"
         );
         
-        // display whether result of creating PyModule was OK or Err
-        match &functions_pymodule {
-            Ok(_) => println!("\nResult: OK\nPython module was successfully created"),
-            Err(pyerr) => println!("\nResult: ERR\nPython module could not be created because {}\n", pyerr),
+        // next action depends on whether result of creating PyModule was OK or Err
+        match functions_pymodule {
+            Ok(functions) => {
+                println!("\nResult: OK\nPython module was successfully created");
+
+                // Example 1: display emoji 
+                println!("\nDemo#7a.1\nEvaluating...\n-----start of py output-----\n");
+                let emoji_function = functions.getattr("emoji_test")?;
+        
+                emoji_function.call0()?;
+                println!("\n-----end of py output-----\n");
+              
+                // example 2 - random number
+                println!("\nDemo#7a.2\nEvaluating...\n-----start of py output-----\n");
+                let rand_function = functions.getattr("random_number")?;
+                let args = PyTuple::new(py, &[10, 20]);
+                let function_result:i32 = rand_function.call1(args)?.extract()?;
+                println!("A random number {}", function_result);
+                println!("\n-----end of py output-----\n");
+               
+                return Ok(function_result);
+            },
+            Err(pyerr) => {
+                println!("\nResult: ERR\nPython module could not be created because {}\n", pyerr);
+                return Err(pyerr);
+            },
         };
-
-        // if result was ok, access inner value and assign to variable
-        // if result was err, exit and return the error
-        let functions_pymodule = functions_pymodule?;
-
-        // Example 1: display emoji 
-        println!("\nDemo#7a.1\nEvaluating...\n-----start of py output-----\n");
-        let emoji_function = functions_pymodule.getattr("emoji_test")?;
-        emoji_function.call0()?;
-        println!("\n-----end of py output-----\n");
-      
-        // example 2 - random number
-        println!("\nDemo#7a.2\nEvaluating...\n-----start of py output-----\n");
-        let rand_function = functions_pymodule.getattr("random_number")?;
-        let args = PyTuple::new(py, &[10, 20]);
-        let function_result:i32 = rand_function.call1(args)?.extract()?;
-        println!("A random number {}", function_result);
-        println!("\n-----end of py output-----\n");
-       
-        Ok(function_result)
+        
     })
 }
 
