@@ -481,7 +481,7 @@ fn python_function_venv_a()-> PyResult<i32> {
         
         // attempt create PyModule from contents of file
         // this module can be used to access individual functions separately
-        let functions_pymodule = PyModule::from_code(
+        let functions_pymodule: PyResult<&PyModule> = PyModule::from_code(
             py,
             &code,
             "functions.py",
@@ -511,11 +511,17 @@ fn python_function_venv_a()-> PyResult<i32> {
                 return Ok(function_result);
             },
             Err(pyerr) => {
-                println!("\nResult: ERR\nPython module could not be created because {}\n", pyerr);
+                println!("\nResult: ERR\nPython module could not be created"); 
+                
+                // take different actions depending on what kind of error occured
+                match &pyerr.get_type(py) {
+                    PySyntaxError => {println!("Failed to create PyModule: syntax error")},
+                    PyModuleNotFoundError => {println!("Failed to create PyModule: module not found");},
+                    _ => println!("unspecified error occured")
+                };
                 return Err(pyerr);
             },
-        };
-        
+        };     
     })
 }
 
