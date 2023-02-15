@@ -28,6 +28,7 @@ fn main() {
     display_package_info();
     println!("\n----------Begin PYO3 example functions -------------------------------------\n");
     // each of the following examples shows a different way to call Python from Rust
+    /*
     println!("\nExample 1: simple inline code");
     let _r1 = match simple_inline_python_code() {
         Ok(_) =>     println!("Py Function 1 success!!!\n"),
@@ -69,7 +70,8 @@ fn main() {
         Err(e) =>     println!("Py Function 6 failed because {e}...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
-
+     */
+    
     println!("\nExample 7a: functions requiring packages installed on venv -- returns PyResult<i32>");
     let _r7a = match python_function_venv_a() {
         Ok(n) =>     println!("Py Function 7a success!! \nThe result was {n:?} \n"),
