@@ -56,17 +56,24 @@ fn main() {
     println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 6: error handling");
-    let _r5 = match python_function_err_handling() {
+    let _r6 = match python_function_err_handling() {
         Ok(n) =>     println!("Py Function 6 success!! \nThe result was {n:?} \n"),
         Err(e) =>     println!("Py Function 6 failed because {e}...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
-    println!("\nExample 7: functions requiring packages installed on venv");
-    let _r5 = match python_function_venv() {
-        Ok(n) =>     println!("Py Function 7 success!! \nThe result was {n:?} \n"),
-        Err(e) =>     println!("Py Function 7 failed because {e}...\n"),
+    println!("\nExample 7a: functions requiring packages installed on venv -- returns PyResult<i32>");
+    let _r7a = match python_function_venv_a() {
+        Ok(n) =>     println!("Py Function 7a success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("Py Function 7a failed because {e}...\n"),
     };
+
+    println!("\nExample 7b: functions requiring packages installed on venv -- returns Result<i32>");
+    let _r7b = match python_function_venv_b() {
+        Ok(n) =>     println!("Py Function 7b success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("Py Function 7b failed because {e}...\n"),
+    };
+
     println!("\nEnd\n--------------------------------------------------\n");
 
 }
@@ -111,6 +118,7 @@ fn get_py_file_contents(file_name:&str) -> Result<String, Error> {
             // finished--return string inside Result
             Ok(s.to_owned())
         },
+        
         Err(e) => {
             println!("Could not open file because: {}", e);
             Err(e)
@@ -401,13 +409,14 @@ fn python_function_err_handling()-> PyResult<i32> {
     })
 }
 
-// Example 7
+// Example 7a
 // Python functions that require packages installed on a virtual environment
-fn python_function_venv()-> PyResult<i32> {
+fn python_function_venv_a()-> PyResult<i32> {
     
     // Initialize Python interpreter and acquire Global Interpreter Lock
     println!("\nInitializing py interpreter...");
     Python::with_gil(|py| {
+
         // first we need to grab the python code from a local file
         let code = get_py_file_contents("py/functions_venv.py")?; 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
@@ -432,13 +441,13 @@ fn python_function_venv()-> PyResult<i32> {
         let functions_pymodule = functions_pymodule?;
 
         // Example 1: display emoji 
-        println!("\nDemo#7.1\nEvaluating...\n-----start of py output-----\n");
+        println!("\nDemo#7a.1\nEvaluating...\n-----start of py output-----\n");
         let emoji_function = functions_pymodule.getattr("emoji_test")?;
         emoji_function.call0()?;
         println!("\n-----end of py output-----\n");
       
         // example 2 - random number
-        println!("\nDemo#7.2\nEvaluating...\n-----start of py output-----\n");
+        println!("\nDemo#7a.2\nEvaluating...\n-----start of py output-----\n");
         let rand_function = functions_pymodule.getattr("random_number")?;
         let args = PyTuple::new(py, &[10, 20]);
         let function_result:i32 = rand_function.call1(args)?.extract()?;
@@ -448,6 +457,58 @@ fn python_function_venv()-> PyResult<i32> {
         Ok(function_result)
     })
 }
+
+
+// Example 7b
+// Python functions that require packages installed on a virtual environment
+fn python_function_venv_b()-> Result<i32, Error> {
+    
+    // Initialize Python interpreter and acquire Global Interpreter Lock
+    println!("\nInitializing py interpreter...");
+    Python::with_gil(|py| {
+
+        // first we need to grab the python code from a local file
+        let code = get_py_file_contents("py/functions_venv.py")?; 
+        println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
+        
+        // attempt create PyModule from contents of file
+        // this module can be used to access individual functions separately
+        let functions_pymodule = PyModule::from_code(
+            py,
+            &code,
+            "functions.py",
+            "functions"
+        );
+        
+        // display whether result of creating PyModule was OK or Err
+        match &functions_pymodule {
+            Ok(_) => println!("\nResult: OK\nPython module was successfully created"),
+            Err(pyerr) => println!("\nResult: ERR\nPython module could not be created because {}\n", pyerr),
+        };
+
+        // if result was ok, access inner value and assign to variable
+        // if result was err, exit and return the error
+        let functions_pymodule = functions_pymodule?;
+
+        // Example 1: display emoji 
+        println!("\nDemo#7b.1\nEvaluating...\n-----start of py output-----\n");
+        let emoji_function = functions_pymodule.getattr("emoji_test")?;
+        emoji_function.call0()?;
+        println!("\n-----end of py output-----\n");
+      
+        // example 2 - random number
+        println!("\nDemo#7b.2\nEvaluating...\n-----start of py output-----\n");
+        let rand_function = functions_pymodule.getattr("random_number")?;
+        let args = PyTuple::new(py, &[10, 20]);
+        let function_result:i32 = rand_function.call1(args)?.extract()?;
+        println!("A random number {}", function_result);
+        println!("\n-----end of py output-----\n");
+       
+        Ok(function_result)
+    })
+}
+
+
 
 
 
