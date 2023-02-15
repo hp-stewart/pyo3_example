@@ -1,5 +1,6 @@
 use std::io;
 use std::io::prelude::*;
+use::std::io::Error;
 use std::path::Path;
 use std::fs::File;
 use std::collections::HashMap;
@@ -92,18 +93,31 @@ fn display_package_info() {
 
 }
 
-fn get_py_file_contents(file_name:&str) -> String {
-    // first we need to grab the python code from a local file
+fn get_py_file_contents(file_name:&str) -> Result<String, Error> {
     // Create a path to the desired file
+    println!("Opening file: {}", &file_name);
     let path = Path::new(file_name);
 
-    // Open the path in read-only mode, returns `io::Result<File>`
-    let mut file = File::open(&path).unwrap();
+    // try to open the file
+    let file = File::open(&path);
+    
+    // match on file to examine result of open operation
+    let result:Result<String, Error> = match file {
+        Ok(mut file) => {
+            println!("File was opened successfully");
+            // create a new String and read the file contents into it
+            let mut s = String::new();
+            file.read_to_string(&mut s)?;
+            // finished--return string inside Result
+            Ok(s.to_owned())
+        },
+        Err(e) => {
+            println!("Could not open file because: {}", e);
+            Err(e)
+        }
+    };
+    return result;
 
-    // Read the file contents into a mutable String object, returns `io::Result<usize>`
-    let mut s = String::new();
-    file.read_to_string(&mut s).unwrap();
-    return s
 }
 
 // Example functions are defined below
@@ -313,7 +327,7 @@ fn python_function_from_file() -> PyResult<i32> {
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
-        let code = get_py_file_contents("py/functions.py"); 
+        let code = get_py_file_contents("py/functions.py")?; 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
         
         // create PyModule from contents of file
@@ -359,7 +373,7 @@ fn python_function_err_handling()-> PyResult<i32> {
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
         // Create a path to the desired file
-        let code = get_py_file_contents("py/functions.py"); 
+        let code = get_py_file_contents("py/functions.py")?; 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
         
         // create PyModule from contents of file
@@ -395,36 +409,42 @@ fn python_function_venv()-> PyResult<i32> {
     println!("\nInitializing py interpreter...");
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
-        // Create a path to the desired file
-        let code = get_py_file_contents("py/functions_venv.py"); 
+        let code = get_py_file_contents("py/functions_venv.py")?; 
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
         
         // attempt create PyModule from contents of file
-        // this is used to access individual functions separately
-        let functions = PyModule::from_code(
+        // this module can be used to access individual functions separately
+        let functions_pymodule = PyModule::from_code(
             py,
             &code,
             "functions.py",
             "functions"
         );
+        
+        // display whether result of creating PyModule was OK or Err
+        match &functions_pymodule {
+            Ok(_) => println!("\nResult: OK\nPython module was successfully created"),
+            Err(pyerr) => println!("\nResult: ERR\nPython module could not be created because {}\n", pyerr),
+        };
 
-        let functions = functions.unwrap();
-
+        // if result was ok, access inner value and assign to variable
+        // if result was err, exit and return the error
+        let functions_pymodule = functions_pymodule?;
 
         // Example 1: display emoji 
         println!("\nDemo#7.1\nEvaluating...\n-----start of py output-----\n");
-        let emoji_function = functions.getattr("emoji_test").unwrap();
-        emoji_function.call0().unwrap();
+        let emoji_function = functions_pymodule.getattr("emoji_test")?;
+        emoji_function.call0()?;
         println!("\n-----end of py output-----\n");
       
         // example 2 - random number
         println!("\nDemo#7.2\nEvaluating...\n-----start of py output-----\n");
-        let rand_function = functions.getattr("random_number").unwrap();
-        let args = PyTuple::new(py, &[0,50]);
-        let function_result:i32 = rand_function.call1(args).unwrap().extract()?;
+        let rand_function = functions_pymodule.getattr("random_number")?;
+        let args = PyTuple::new(py, &[10, 20]);
+        let function_result:i32 = rand_function.call1(args)?.extract()?;
         println!("A random number {}", function_result);
         println!("\n-----end of py output-----\n");
-        
+       
         Ok(function_result)
     })
 }
