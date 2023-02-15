@@ -1,9 +1,13 @@
-use std::io;
+use std::ffi::OsStr;
+use std::fs;
 use std::io::prelude::*;
-use::std::io::Error;
+use std::io;
+use std::io::Error;
+use std::io::ErrorKind;
+use std::collections::HashMap;
 use std::path::Path;
 use std::fs::File;
-use std::collections::HashMap;
+use std::fs::FileType;
 
 use std::process::Command; // used to do "$pip list" from inside Rust
 
@@ -100,10 +104,48 @@ fn display_package_info() {
 
 }
 
+
+// path should meet the following requirements:
+//  - path is valid and exists
+//  - path leads to a file with .py extension
+//  - the file can be read and its contents are not empty
+fn validate_py_path(path:&Path) -> Result<(), String> {
+    // confirm path exists and is a file rather than a directory
+    if !path.exists() { 
+        return Err("Path does not exist".to_owned());    }
+    if !path.is_file() { 
+        return Err("Path does not lead to a file (maybe a directory?)".to_owned());   }
+
+    // file extension must be a .py 
+    let expected_extension = OsStr::new("py");
+    match path.extension() {
+        Some(ext) => {
+            println!("file ext: {:?}", ext);
+            if ext == expected_extension {
+                Ok(())
+            } else {
+                Err("Invalid file extension".to_owned())
+            }
+        },
+        None => {
+            println!("c");
+            Err("path.extension() failed--maybe path does not have a period delimiting the extension?".to_owned())
+        },
+
+    }
+}
+
 fn get_py_file_contents(file_name:&str) -> Result<String, Error> {
+
     // Create a path to the desired file
     println!("Opening file: {}", &file_name);
     let path = Path::new(file_name);
+
+    // validate path
+    let path_validation =  validate_py_path(&path);
+    if path_validation.is_err() {
+        return Err(Error::new(ErrorKind::Other, path_validation.err().unwrap_or("Could not validate path".to_owned())));
+    }
 
     // try to open the file
     let file = File::open(&path);
@@ -112,15 +154,27 @@ fn get_py_file_contents(file_name:&str) -> Result<String, Error> {
     let result:Result<String, Error> = match file {
         Ok(mut file) => {
             println!("File was opened successfully");
+
             // create a new String and read the file contents into it
             let mut s = String::new();
             file.read_to_string(&mut s)?;
-            // finished--return string inside Result
+            
+            // make sure file is not empty
+            if s.is_empty() {
+                return Err(Error::new(ErrorKind::Other, String::from("Py file was empty...")));
+            }
+            // finished inner actions for successful file read--return file content string inside Result
             Ok(s.to_owned())
         },
-        
-        Err(e) => {
-            println!("Could not open file because: {}", e);
+        Err(e) => { 
+            println!("Failed to open file");
+            // can use match to create different behavior depending on what kind of error occcured
+            match e.kind() {
+                ErrorKind::NotFound => println!("File not Found"),
+                ErrorKind::PermissionDenied => println!("Permission Denied"),
+                _ => println!("Unknown Error Occured: {}", e),
+            } 
+            // finished inner actions for unsuccessful file read--return error inside Result
             Err(e)
         }
     };
