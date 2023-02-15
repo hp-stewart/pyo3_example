@@ -71,7 +71,7 @@ fn main() {
     };
     println!("\nEnd\n--------------------------------------------------\n");
      */
-    
+
     println!("\nExample 7a: functions requiring packages installed on venv -- returns PyResult<i32>");
     let _r7a = match python_function_venv_a() {
         Ok(n) =>     println!("Py Function 7a success!! \nThe result was {n:?} \n"),
@@ -496,21 +496,39 @@ fn python_function_venv_a()-> PyResult<i32> {
                 println!("\nResult: OK\nPython module was successfully created");
 
                 // Example 1: display emoji 
-                println!("\nDemo#7a.1\nEvaluating...\n-----start of py output-----\n");
-                let emoji_function = functions.getattr("emoji_test")?;
-        
-                emoji_function.call0()?;
-                println!("\n-----end of py output-----\n");
+                println!("\nDemo#7a - Emoji\n");
+                
+                let load_emoji_function = functions.getattr("emoji_test");
+                match load_emoji_function {
+                    Ok(emoji_function) => {
+                        println!("Evaluating...\n-----start of py output-----\n");
+                        emoji_function.call0()?;
+                        println!("\n-----end of py output-----\n");
+                    },
+                    Err(pyerr) => {
+                        println!("Error: {}", pyerr);     
+                    }
+                };
               
-                // example 2 - random number
-                println!("\nDemo#7a.2\nEvaluating...\n-----start of py output-----\n");
-                let rand_function = functions.getattr("random_number")?;
-                let args = PyTuple::new(py, &[10, 20]);
-                let function_result:i32 = rand_function.call1(args)?.extract()?;
-                println!("A random number {}", function_result);
-                println!("\n-----end of py output-----\n");
+                // Example 2: Random Number 
+                println!("\nDemo#7b - Random\n");
+                
+                let load_rand_function = functions.getattr("random_number");
+                match load_rand_function {
+                    Ok(rand_function) => {
+                        println!("Evaluating...\n-----start of py output-----\n");
+                        let args = PyTuple::new(py, &[10, 20]);
+                        let function_result:i32 = rand_function.call1(args)?.extract()?;
+                        println!("\n-----end of py output-----\n");
+                        println!("A random number from Python: {}\n", function_result);
+                        return Ok(function_result);
                
-                return Ok(function_result);
+                    },
+                    Err(pyerr) => {
+                        println!("Error: {}", pyerr);  
+                        return Err(pyerr);   
+                    }
+                }
             },
             Err(pyerr) => {
                 println!("\nResult: ERR\nPython module could not be created"); 
