@@ -16,7 +16,8 @@ def emoji_test():
 # This function is used only by example 7c
 # The when this function is called in Rust, the final output will be in the form Result<Option<char>, Error>
 def color_emoji(color:str):
-
+    if not color.isalpha():
+        raise ValueError("No numbers allowed in color name")
     # format string into color code
     emoji_string = ":" + color.lower() + "_circle:"
     print("\nAttempting to display Emoji for code: " + emoji_string)
