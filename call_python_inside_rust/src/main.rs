@@ -73,17 +73,18 @@ fn main() {
     println!("\nEnd\n--------------------------------------------------\n");
      */
 
-    println!("\nExample 7a: functions requiring packages installed on venv -- returns PyResult<i32>");
+    println!("\nExample 7a: functions requiring packages installed on venv -- returns PyResult<i32, PyErr>");
     let _r7a = match python_function_venv_a() {
         Ok(n) =>     println!("Py Function 7a success!! \nThe result was {n:?} \n"),
         Err(pyerr) =>     println!("Py Function 7a failed because {pyerr} ...\n"),
     };
+    println!("\n\n---------------------------------------------------------------------------\n---------------------------------------------------------------------------\n");
 
-    // println!("\nExample 7b: functions requiring packages installed on venv -- returns Result<i32>");
-    // let _r7b = match python_function_venv_b() {
-    //     Ok(n) =>     println!("Py Function 7b success!! \nThe result was {n:?} \n"),
-    //     Err(e) =>     println!("Py Function 7b failed because {e}...\n"),
-    // };
+    println!("\nExample 7b: functions requiring packages installed on venv -- returns Result<i32, Error>");
+    let _r7b = match python_function_venv_b() {
+        Ok(n) =>     println!("Py Function 7b success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("Py Function 7b failed because {e}...\n"),
+    };
 
     println!("\nEnd\n--------------------------------------------------\n");
 
@@ -625,38 +626,129 @@ fn python_function_venv_b()-> Result<i32, Error> {
         
         // attempt create PyModule from contents of file
         // this module can be used to access individual functions separately
-        let functions_pymodule = PyModule::from_code(
+        let functions_pymodule: Result<&PyModule, PyErr> = PyModule::from_code(
             py,
             &code,
             "functions.py",
             "functions"
         );
         
-        // display whether result of creating PyModule was OK or Err
-        match &functions_pymodule {
-            Ok(_) => println!("\nResult: OK\nPython module was successfully created"),
-            Err(pyerr) => println!("\nResult: ERR\nPython module could not be created because {}\n", pyerr),
-        };
+        // The next action to take depends on whether result of creating PyModule was OK or Err
+        // if Ok, then load a function with .getattr(), create some args (if needed), and execute the function using .call0() or .call1()
+        // if Err, then display the reason and return the relevant PyErr to main()
+        // Err may occur for reasons such as:
+        //  - Python cant compile because of syntax error in code
+        //  - Python cant compile because imported libraries cant be found
+        // ...etc. 
+        match functions_pymodule {
+            Ok(functions) => {
+                println!("\nResult: OK\nPython module was successfully created");
 
-        // if result was ok, access inner value and assign to variable
-        // if result was err, exit and return the error
-        let functions_pymodule = functions_pymodule?;
+                // Example 1: display emoji 
+                println!("\nDemo#7a 1 - Emoji\n");
+                
+                println!("Accessing function 'emoji_test()'");
+                let load_emoji_function = functions.getattr("emoji_test");
+                
+                // unpack Result of loading function and decide what to do next
+                // if Ok, call the function (nothing is returned)
+                // if Err, display the reason why (nothing is returned)
+                match load_emoji_function {
+                    Ok(emoji_function) => {
+                        // loaded successfully -> call the function and print whether the result was Ok or Err
+                        println!("Successfully accessed function 'emoji_test()'");
+                        println!("Evaluating...\n-----start of py output-----\n");
+                        match emoji_function.call0() {
+                            Ok(_) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("emoji_test() function call succeeded");
+                            },
+                            Err(pyerr) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("emoji_test() function call failed because: {}", pyerr);
+                            },
+                        };
+                    },
+                    Err(pyerr) => {
+                        // failed to load function
+                        println!("Failed to access function 'emoji_test' because: {}", pyerr);     
+                    }
+                };
+              
+                // Example 2: Random Number 
+                println!("\n\nDemo#7a 2 - Random\n");
 
-        // Example 1: display emoji 
-        println!("\nDemo#7b.1\nEvaluating...\n-----start of py output-----\n");
-        let emoji_function = functions_pymodule.getattr("emoji_test")?;
-        emoji_function.call0()?;
-        println!("\n-----end of py output-----\n");
-      
-        // example 2 - random number
-        println!("\nDemo#7b.2\nEvaluating...\n-----start of py output-----\n");
-        let rand_function = functions_pymodule.getattr("random_number")?;
-        let args = PyTuple::new(py, &[10, 20]);
-        let function_result:i32 = rand_function.call1(args)?.extract()?;
-        println!("A random number {}", function_result);
-        println!("\n-----end of py output-----\n");
-       
-        Ok(function_result)
+                println!("Accessing function 'random_number()'");
+                let load_rand_function = functions.getattr("random_number");
+                
+                
+                // unpack Result of loading function and decide what to do next
+                // if Ok, create some args and call the function with them. If the call succeeds, the value is returned
+                // if Err, display the reason why and return the relevent PyErr 
+                // Err may occur for reasons such as:
+                //  - no function by that name (ex. incorrect spelling)
+                match load_rand_function {
+                    Ok(rand_function) => {
+                        println!("Successfully accessed function 'random_number()'");
+                        
+                        // random number test 1
+                        let args = PyTuple::new(py, &[10, 20]);
+                        println!("\nTesting function using args {:?}", args);
+                        
+                        println!("Evaluating...\n-----start of py output-----\n");
+                        
+                        // call the function and decide what to do next based on Result
+                        // if Ok, convert the new PyAny value to i32 and return it
+                        // if Err, display the reason why and return the relevent PyErr 
+                        // Err may occur for reasons such as:
+                        //  - Supplied arguments are the wrong type
+                        //  - Supplied arguments have invalid value(s) (ex. lower_limt > higher_limit)
+                        // ...etc. 
+                        match rand_function.call1(args) {
+                            Ok(num) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("random_number() function call succeeded");
+                                println!("A random number from Python: {}\n", num);
+                                let num:i32 = num.extract()?;
+                                return Ok(num);
+                            },
+                            Err(pyerr) if pyerr.is_instance_of::<PyTypeError>(py) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("random_number() function call failed because PyTypeError: {}", pyerr);
+                                return Err(Error::new(ErrorKind::InvalidInput, pyerr));
+                            },
+                            Err(pyerr) if pyerr.is_instance_of::<PyValueError>(py) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("random_number() function call failed because PyValueError: {}", pyerr);
+                                return Err(Error::new(ErrorKind::InvalidInput, pyerr));
+                            },
+                            Err(pyerr) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("random_number() function call failed because unspecified Python error: {}", pyerr);
+                                return Err(Error::new(ErrorKind::Other, pyerr));
+                            },
+                        };
+                    },
+                    Err(pyerr) => {
+                        println!("Failed to access function 'random_number()' because: {}", pyerr); 
+                        return Err(Error::new(ErrorKind::Other, pyerr));
+    
+                    }
+                }
+            },
+            Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
+                println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error"); 
+                return Err(Error::new(ErrorKind::InvalidInput, pyerr));
+            },
+            Err(pyerr) if pyerr.is_instance_of::<PyModuleNotFoundError>(py) => {
+                println!("\nResult: ERR (NotFound) \nPython module could not be created because something wasnt found"); 
+                return Err(Error::new(ErrorKind::NotFound, pyerr));
+            },
+            Err(pyerr) => {
+                println!("\nResult: ERR (Unspecified Error)\nPython module could not be created"); 
+                return Err(Error::new(ErrorKind::Other, pyerr));
+            },
+        };     
     })
 }
 
