@@ -32,58 +32,65 @@ fn main() {
     /*
     println!("\nExample 1: simple inline code");
     let _r1 = match simple_inline_python_code() {
-        Ok(_) =>     println!("Py Function 1 success!!!\n"),
-        Err(_) =>     println!("Py Function 1 failed...\n"),
+        Ok(_) =>     println!("\nPy Function 1 success!!!\n"),
+        Err(_) =>     println!("\nPy Function 1 failed...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 2: inline code + library import");
     let _r2 = match print_python_version() {
-        Ok(_) =>     println!("Py Function 2 success!!!\n"),
-        Err(_) =>     println!("Py Function 2 failed...\n"),
+        Ok(_) =>     println!("\nPy Function 2 success!!!\n"),
+        Err(_) =>     println!("\nPy Function 2 failed...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 3:  No args, vs PyTuple args, vs rust tuple args");
     let _r3 = match python_function_with_args() {
-        Ok(_) =>     println!("Py Function 3 success!!!\n"),
-        Err(_) =>     println!("Py Function 3 failed...\n"),
+        Ok(_) =>     println!("\nPy Function 3 success!!!\n"),
+        Err(_) =>     println!("\nPy Function 3 failed...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
     
     println!("\nExample 4: kwargs as PyDict, Vec, or Hashmap");
     let _r4 = match python_function_with_kwargs() {
-        Ok(_) =>     println!("Py Function 4 success!!!\n"),
-        Err(_) =>     println!("Py Function 4 failed...\n"),
+        Ok(_) =>     println!("\nPy Function 4 success!!!\n"),
+        Err(_) =>     println!("\nPy Function 4 failed...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 5: call from local .py file");
     let _r5 = match python_function_from_file() {
-        Ok(n) =>     println!("Py Function 5 success!! \nThe result was {n:?} \n"),
-        Err(e) =>     println!("Py Function 5 failed because {e}...\n"),
+        Ok(n) =>     println!("\nPy Function 5 success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("\nPy Function 5 failed because {e}...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
 
     println!("\nExample 6: error handling");
     let _r6 = match python_function_err_handling() {
-        Ok(n) =>     println!("Py Function 6 success!! \nThe result was {n:?} \n"),
-        Err(e) =>     println!("Py Function 6 failed because {e}...\n"),
+        Ok(n) =>     println!("\nPy Function 6 success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("\nPy Function 6 failed because {e}...\n"),
     };
     println!("\nEnd\n--------------------------------------------------\n");
      */
 
     println!("\nExample 7a: functions requiring packages installed on venv -- returns PyResult<i32, PyErr>");
     let _r7a = match python_function_venv_a() {
-        Ok(n) =>     println!("Py Function 7a success!! \nThe result was {n:?} \n"),
-        Err(pyerr) =>     println!("Py Function 7a failed because {pyerr} ...\n"),
+        Ok(n) =>     println!("\nPy Function 7a success!! \nThe result was {n:?} \n"),
+        Err(pyerr) =>     println!("\nPy Function 7a failed because {pyerr} ...\n"),
     };
     println!("\n\n---------------------------------------------------------------------------\n---------------------------------------------------------------------------\n");
 
     println!("\nExample 7b: functions requiring packages installed on venv -- returns Result<i32, Error>");
     let _r7b = match python_function_venv_b() {
-        Ok(n) =>     println!("Py Function 7b success!! \nThe result was {n:?} \n"),
-        Err(e) =>     println!("Py Function 7b failed because {e}...\n"),
+        Ok(n) =>     println!("\nPy Function 7b success!! \nThe result was {n:?} \n"),
+        Err(e) =>     println!("\nPy Function 7b failed because {e}...\n"),
+    };
+    println!("\n\n---------------------------------------------------------------------------\n---------------------------------------------------------------------------\n");
+
+    println!("\nExample 7c: functions requiring packages installed on venv -- returns Result<Option<char>, Error>");
+    let _r7c = match python_function_venv_c() {
+        Ok(n) =>     println!("\nPy Function 7c success!! \nThe result was Ok({n:?}) \n"),
+        Err(e) =>     println!("\nPy Function 7c failed because {e}...\n"),
     };
 
     println!("\nEnd\n--------------------------------------------------\n");
@@ -189,6 +196,33 @@ fn get_py_file_contents(file_name:&str) -> Result<String, Error> {
     return result;
 
 }
+
+// convert python type "Optional" into Rust type "Option"
+fn extract_py_emoji_optional_output(py_option:&PyAny) -> Option<char> {
+    println!("Converting Py Option to Rust...");
+    
+    // TO-DO: replace unwrap()s used to unpack getattr() and call0()
+    match py_option.getattr("is_present").unwrap().call0().unwrap().to_string().as_str() {
+        "True" => {
+            // is_present == True
+            println!("Sucess -> 'SOME'");
+            let value = py_option.getattr("get").unwrap().call0().unwrap().extract().unwrap();
+           
+            return Some(value);
+        },
+        "False" => {
+            // is_present == False
+
+            println!("Sucess -> 'NONE'");
+            return None;
+        },
+        _ => {
+            println!("Failure -> Something went wrong");
+            return None;
+        },
+    }
+}
+
 
 // Example functions are defined below
 
@@ -645,7 +679,7 @@ fn python_function_venv_b()-> Result<i32, Error> {
                 println!("\nResult: OK\nPython module was successfully created");
 
                 // Example 1: display emoji 
-                println!("\nDemo#7a 1 - Emoji\n");
+                println!("\nDemo#7b 1 - Emoji\n");
                 
                 println!("Accessing function 'emoji_test()'");
                 let load_emoji_function = functions.getattr("emoji_test");
@@ -676,7 +710,7 @@ fn python_function_venv_b()-> Result<i32, Error> {
                 };
               
                 // Example 2: Random Number 
-                println!("\n\nDemo#7a 2 - Random\n");
+                println!("\n\nDemo#7b 2 - Random\n");
 
                 println!("Accessing function 'random_number()'");
                 let load_rand_function = functions.getattr("random_number");
@@ -753,7 +787,98 @@ fn python_function_venv_b()-> Result<i32, Error> {
 }
 
 
+// Example 7c
+// Python functions that require packages installed on a virtual environment
+// fn python_function_venv_c()-> Result<Option<String>, Error> {
+fn python_function_venv_c()-> Result<Option<char>, Error> {
+    // Initialize Python interpreter and acquire Global Interpreter Lock
+    println!("\nInitializing py interpreter...");
+    Python::with_gil(|py| {
 
+        // first we need to grab the python code from a local file
+        let code = get_py_file_contents("py/functions_venv.py")?; 
+        println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
+        
+        // attempt create PyModule from contents of file
+        // this module can be used to access individual functions separately
+        let functions_pymodule: Result<&PyModule, PyErr> = PyModule::from_code(
+            py,
+            &code,
+            "functions.py",
+            "functions"
+        );
+        
+        // The next action to take depends on whether result of creating PyModule was OK or Err
+        // if Ok, then load a function with .getattr(), create some args (if needed), and execute the function using .call0() or .call1()
+        // if Err, then display the reason and return the relevant PyErr to main()
+        // Err may occur for reasons such as:
+        //  - Python cant compile because of syntax error in code
+        //  - Python cant compile because imported libraries cant be found
+        // ...etc. 
+        match functions_pymodule {
+            Ok(functions) => {
+                println!("\nResult: OK\nPython module was successfully created");
 
+                // Example 1: display emoji 
+                println!("\nDemo#7c 1 - Emoji\n");
+                
+                println!("Accessing function 'color_emoji()'");
+                let load_emoji_function = functions.getattr("color_emoji");
+                
+                // unpack Result of loading function and decide what to do next
+                // if Ok, call the function (nothing is returned)
+                // if Err, display the reason why (nothing is returned)
+                match load_emoji_function {
+                    Ok(emoji_function) => {
+                        // loaded successfully -> call the function and print whether the result was Ok or Err
+                        println!("Successfully accessed function 'color_emoji()'");
+                        
+                        // create args to supply to function
+                        let args = PyTuple::new(py, &["red"]);
+                        println!("\nTesting function using args {:?}", args);
+                        
+                        // call the function and choose next actions based on Result Ok or Err
+                        println!("Evaluating...\n-----start of py output-----\n");
+                        match emoji_function.call1(args) {
+                            Ok(output) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("color_emoji() function call succeeded");
 
+                                // python result is returned as an option which pyo3 doesn't recognize
+                                // need to extract the value manually
+                                println!("function returned: {:?}\n", output);
+                                let out = extract_py_emoji_optional_output(output);
+                            
+                                return Ok(out);
+                            },
+                            Err(pyerr) => {
+                                println!("\n-----end of py output-----\n");
+                                println!("color_emoji() function call failed because: {}", pyerr);
+                                return Err(Error::new(ErrorKind::Other, pyerr));
+                            },
+                        };
+                    },
+                    Err(pyerr) => {
+                        // failed to load function
+                        println!("Failed to access function 'color_emoji' because: {}", pyerr); 
+                        return Err(Error::new(ErrorKind::Other, pyerr));    
+                    }
+                };
+              
+            },
+            Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
+                println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error"); 
+                return Err(Error::new(ErrorKind::InvalidInput, pyerr));
+            },
+            Err(pyerr) if pyerr.is_instance_of::<PyModuleNotFoundError>(py) => {
+                println!("\nResult: ERR (NotFound) \nPython module could not be created because something wasnt found"); 
+                return Err(Error::new(ErrorKind::NotFound, pyerr));
+            },
+            Err(pyerr) => {
+                println!("\nResult: ERR (Unspecified Error)\nPython module could not be created"); 
+                return Err(Error::new(ErrorKind::Other, pyerr));
+            },
+        };     
+    })
+}
 
