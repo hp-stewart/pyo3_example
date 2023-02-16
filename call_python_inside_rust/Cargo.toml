@@ -5,6 +5,15 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "call_python_inside_rust"
+path = "src/main.rs"
+
+
+[lib]
+name = "examples"
+path = "src/lib/lib.rs"
+
 [dependencies]
 
 [dependencies.pyo3]
