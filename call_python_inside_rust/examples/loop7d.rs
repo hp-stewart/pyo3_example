@@ -19,8 +19,6 @@ Expected behavior:
     - based on user input, either the loop restarts or ends
  */
 
- use std::io;
-
  use examples;
  fn main() {
      loop {
@@ -38,7 +36,7 @@ Expected behavior:
      
          // try again or quit
          println!("\nExample complete...do you want to start again?");
-         if get_user_confirmation() {
+         if examples::get_user_confirmation() {
              println!("Restarting");
              continue;
          } else {
@@ -51,29 +49,5 @@ Expected behavior:
  }
  
  
- fn get_user_confirmation() -> bool {
-     loop {
-         println!("Yes or No?");
-         
-         let mut input = String::new();
-         io::stdin()
-             .read_line(&mut input)
-             .expect("Failed to read line");
-         
-         match input.trim().to_ascii_uppercase().as_str() {
-             "YES" | "Y" | "TRUE" | "t" => {
-                 println!("Continue");
-                 break true;
-             },
-             "NO" | "N" | "FALSE" | "F" => {
-                 println!("Do not Continue");
-                 break false;
-             },
-             _ => {
-                 println!("Error, invalid response. Please try again");
-                 continue;
-             },
-         };
-     }
- } // end of fn get_user_confirmation()
+
  

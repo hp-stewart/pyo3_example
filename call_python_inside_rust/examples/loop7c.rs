@@ -24,8 +24,6 @@ Expected behavior:
     - based on user input, either the loop restarts or ends
  */
 
-use std::io;
-
 use examples;
 fn main() {
     loop {
@@ -33,12 +31,9 @@ fn main() {
         
         // user input selects a color to be displayed
         println!("Enter a color to be Displayed: ");
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line");
-        let input = input.trim();
-        
+        let input = examples::get_user_input();
+
+    
         // run the example
         println!("\nExample 7c: functions requiring packages installed on venv -- returns Result<Option<char>, Error>");
         let _r7c = match examples::python_function_venv_c(&input) {
@@ -50,7 +45,7 @@ fn main() {
     
         // try again or quit
         println!("\nExample complete...do you want to start again?");
-        if get_user_confirmation() {
+        if examples::get_user_confirmation() {
             println!("Restarting");
             continue;
         } else {
@@ -63,28 +58,3 @@ fn main() {
 }
 
 
-fn get_user_confirmation() -> bool {
-    loop {
-        println!("Yes or No?");
-        
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read line");
-        
-        match input.trim().to_ascii_uppercase().as_str() {
-            "YES" | "Y" | "TRUE" | "t" => {
-                println!("Continue");
-                break true;
-            },
-            "NO" | "N" | "FALSE" | "F" => {
-                println!("Do not Continue");
-                break false;
-            },
-            _ => {
-                println!("Error, invalid response. Please try again");
-                continue;
-            },
-        };
-    }
-} // end of fn get_user_confirmation()
