@@ -603,7 +603,27 @@
                 "functions.py",
                 "functions"
             );
-            
+
+            let args = PyTuple::new(py, &[color_name]);
+            let out:Option<char> = match functions_pymodule?.getattr("color_emoji")?.call1(args) {
+                Ok(n) => {
+                    // python function completd successfully 
+                    // need to check if Some or None
+
+
+                    return Ok(Some(n.extract()?));
+                },
+                Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
+                    println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error"); 
+                    return Err(Error::new(ErrorKind::InvalidInput, pyerr));
+                },
+                Err(e) => {return Err(Error::new(ErrorKind::Other, e));}
+            };
+
+            // do some math on out, you could use match out {} or out.map()
+            // return the result after this math instead of in the previous match
+         
+            /* 
             // The next action to take depends on whether result of creating PyModule was OK or Err
             // if Ok, then load a function with .getattr(), create some args (if needed), and execute the function using .call0() or .call1()
             // if Err, then display the reason and return the relevant PyErr to main()
@@ -622,8 +642,8 @@
                     let load_emoji_function = functions.getattr("color_emoji");
                     
                     // unpack Result of loading function and decide what to do next
-                    // if Ok, call the function (nothing is returned)
-                    // if Err, display the reason why (nothing is returned)
+                    // if Ok, call the function and return the value as an Option
+                    // if Err, display the reason why and return the Error 
                     match load_emoji_function {
                         Ok(emoji_function) => {
                             // loaded successfully -> call the function and print whether the result was Ok or Err
@@ -674,10 +694,73 @@
                     println!("\nResult: ERR (Unspecified Error)\nPython module could not be created"); 
                     return Err(Error::new(ErrorKind::Other, pyerr));
                 },
-            };     
+            }; */    
         })
     }
     
+
+    
+    
+    // Example 7d
+    // Python functions that require packages installed on a virtual environment
+    // fn python_function_venv_c()-> Result<Option<int>, Error> {
+        pub fn python_function_venv_d(upper_limit:i32, lower_limit:i32)-> Result<Option<i32>, Error> {
+            // Initialize Python interpreter and acquire Global Interpreter Lock
+            println!("\nInitializing py interpreter...");
+            Python::with_gil(|py| {
+        
+                // first we need to grab the python code from a local file
+                let code = get_py_file_contents("py/functions_venv.py")?; 
+                println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
+                
+                // attempt create PyModule from contents of file
+                // this module can be used to access individual functions separately
+                let functions_pymodule: Result<&PyModule, PyErr> = PyModule::from_code(
+                    py,
+                    &code,
+                    "functions.py",
+                    "functions"
+                );
+
+                let args = PyTuple::new(py, &[lower_limit, upper_limit]);
+                println!("\nEvaluating python code using args {args:?}...\n-----start of py output-----\n");
+                let out:Option<i32> = match functions_pymodule?.getattr("random_number")?.call1(args) {
+                    Ok(n) => {
+                        // python function completed successfully 
+                        println!("\n-----end of py output-----\n");
+                        println!("random_number() function call succeeded");
+                        // need to decide if value correponds to Some or None
+                        let num:i32 = n.extract()?; //change python int to rust i32
+                        if num & 1 == 1 {
+                            println!("The random number {num} is ODD - return Some");
+                            Some(num)
+                        } else {
+                            println!("The random number {num} is EVEN - return None");
+                            None
+                        }
+    
+                    },
+                    Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
+                        println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error"); 
+                        return Err(Error::new(ErrorKind::InvalidInput, pyerr));
+                    },
+                    Err(e) => {return Err(Error::new(ErrorKind::Other, e));}
+                };
+    
+                // do some math on out, you could use match out {} or out.map()
+                // return the result after this math instead of in the previous match
+                println!("\nProcessing Option(num) from Python in Rust...");
+                println!("Double number if it is ODD, do nothing if number is EVEN...");
+                let out = out.map(|n| n*2);
+                println!("\nProcessed result: {:?}", &out);
+
+                Ok(out)
+             
+            })
+        }
+        
+    
+        
     // Misc Helper functions
     
     pub fn display_package_info() {
