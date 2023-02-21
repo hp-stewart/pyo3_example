@@ -9,7 +9,7 @@ from contextlib import closing
 import pathlib
 import subprocess
 
-def rust_polly_demo(text):
+def polly_demo(text):
     print("Creating Speech from text using Polly")
     p = AmazonPolly()
     p.set_dialog(text)
@@ -73,4 +73,4 @@ class AmazonPolly():
 
 
 if __name__ == "__main__":
-    rust_polly_demo("Happy Tuesday.")
+    polly_demo("Happy Tuesday.")
