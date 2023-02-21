@@ -609,9 +609,12 @@
                 Ok(n) => {
                     // python function completd successfully 
                     // need to check if Some or None
-
-
-                    return Ok(Some(n.extract()?));
+                    let cha:char = n.extract()?;
+                    if cha=='0' {
+                        return Ok(None);
+                    } else {
+                        return Ok(Some(cha));
+                    }
                 },
                 Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
                     println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error"); 
@@ -620,9 +623,7 @@
                 Err(e) => {return Err(Error::new(ErrorKind::Other, e));}
             };
 
-            // do some math on out, you could use match out {} or out.map()
-            // return the result after this math instead of in the previous match
-         
+     
             /* 
             // The next action to take depends on whether result of creating PyModule was OK or Err
             // if Ok, then load a function with .getattr(), create some args (if needed), and execute the function using .call0() or .call1()
@@ -894,7 +895,7 @@
             .expect("Failed to read line");
         input.trim().to_owned()
     }
-    
+
     pub fn get_user_confirmation() -> bool {
         loop {
             println!("Yes or No?");

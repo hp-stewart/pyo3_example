@@ -2,7 +2,6 @@
 import random    
 # external library; install using "pip3 install <name>" or by running setup.sh which installs everything listed in requirements.txt
 import emoji     
-import optional 
 
 def random_number(a: int = 0, b: int = 100)-> int:
     random.seed()
@@ -32,11 +31,11 @@ def color_emoji(color:str):
             # display the emoji
             print(emoji.emojize(output_emoji, language='alias'))
             # return pythons version of Option Some(emoji)
-            return optional.Optional.of(output_emoji)
+            return output_emoji
         else:
             print("No emoji with this name exists") 
             # return pythons version of Option None
-            return optional.Optional.empty()
+            return '0'
 
     except:
         raise Exception("Error occured, could not create emoji")
