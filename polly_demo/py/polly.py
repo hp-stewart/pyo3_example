@@ -56,13 +56,11 @@ class AmazonPolly():
                        file.write(stream.read())
                except IOError as error:
               # Could not write to file, exit gracefully
-                  print(error)
-                  sys.exit(-1)
+                  raise error
 
         else:
         # The response didn't contain audio data, exit gracefully
-            print("Could not stream audio")
-            sys.exit(-1)
+            raise Exception("Could not stream audio response")
         
     def play_audio(self):
         # The following works on macOS and Linux. (Darwin = mac, xdg-open = linux).
@@ -73,4 +71,4 @@ class AmazonPolly():
 
 
 if __name__ == "__main__":
-    polly_demo("Happy Tuesday.")
+    polly_demo("Hello World.")
