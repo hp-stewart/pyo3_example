@@ -10,8 +10,11 @@ use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
 
+// Input text
+const INPUT_TEXT:&str = "Happy Tuesday";
+
 fn main() {
-    let s = String::from("Hello Polly.");
+    let s = String::from(INPUT_TEXT);
 
     println!("\nAWS Polly Example:");
     let _r7c = match call_polly(s) {
