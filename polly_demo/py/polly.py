@@ -15,7 +15,7 @@ def polly_demo(text:str):
     p.set_dialog(text)
     p.generate_audio()
     p.play_audio()
-    return p.output_audio_file
+    return p.output_audio_file_path
 
 class AmazonPolly():
     
@@ -23,7 +23,7 @@ class AmazonPolly():
         self.polly = boto3.client('polly')
         self.VOICE_ID = 'Joanna'
         self.text = None
-        self.output_audio_file = os.path.join(pathlib.Path(__file__).resolve().parent, "output.mp3")
+        self.output_audio_file_path = os.path.join(pathlib.Path(__file__).resolve().parent, "output.mp3")
         self.output_format = 'mp3'
         
 
@@ -53,9 +53,9 @@ class AmazonPolly():
             with closing(response["AudioStream"]) as stream:
                try:
             # Open a file for writing the output as a binary stream
-                    with open(self.output_audio_file, "wb") as file:
+                    with open(self.output_audio_file_path, "wb") as file:
                        file.write(stream.read())
-                       print("Success - audio file saved to ", self.output_audio_file)
+                       print("Success - audio file saved to ", self.output_audio_file_path)
                except IOError as error:
               # Could not write to file, exit gracefully
                   raise error
@@ -67,7 +67,7 @@ class AmazonPolly():
     def play_audio(self):
         # The following works on macOS and Linux. (Darwin = mac, xdg-open = linux).
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        subprocess.call([opener, self.output_audio_file])
+        subprocess.call([opener, self.output_audio_file_path])
 
 
 
