@@ -1,36 +1,33 @@
-use std::ffi::OsStr;
-use std::fs::File;
 use std::io::prelude::*;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::path::Path;
+use std::fs::File;
 
-use pyo3::exceptions::PySyntaxError;
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
+use pyo3::exceptions::PySyntaxError;
 
 // Input text
-const INPUT_TEXT:&str = "Welcome to Polly";
+const INPUT_TEXT: &str = "Welcome to Polly";
+const PY_FILE: &str = "py/polly.py";
 
 fn main() {
     let s = String::from(INPUT_TEXT);
-
-    println!("\nAWS Polly Example:");
     match call_polly(s) {
-        Ok(n) => println!("\nPy Function was successful!! \nThe result was: {n:?} \n"),
+        Ok(n) => println!("\nPy Function was successful!! \nThe audio file was saved at: {n:?} \n"),
         Err(e) => println!("\nPy Function failed because {e}...\n"),
     };
 }
 
 // example function
-
-fn call_polly(text: String) -> Result<Option<String>, Error> {
+fn call_polly(text: String) -> Result<String, Error> {
     // Initialize Python interpreter and acquire Global Interpreter Lock
     println!("\nInitializing py interpreter...");
     Python::with_gil(|py| {
         // first we need to grab the python code from a local file
-        let code = get_py_file_contents("py/polly.py")?;
+        let code = get_py_file_contents(PY_FILE)?;
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
 
         // attempt create PyModule from contents of file
@@ -47,94 +44,46 @@ fn call_polly(text: String) -> Result<Option<String>, Error> {
                 // python function completed successfully
                 println!("\n-----end of py output-----\n");
                 println!("polly_demo() function call succeeded");
-                let path:&str = p.extract()?;
-                if path.is_empty() {
-                    return Ok(None);
-                } else {
-                    return Ok(Some(path.to_owned()));
-                }
+                let output_path: String = p.extract()?;
+                return Ok(output_path);
             }
             Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
                 println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error");
                 return Err(Error::new(ErrorKind::InvalidInput, pyerr));
             }
             Err(e) => {
-                return Err(Error::new(ErrorKind::Other, e));
-            }
+                return Err(Error::new(ErrorKind::Other, e));}
         };
     })
 }
 
 // helper functions
-
-// path should meet the following requirements:
-//  - path is valid and exists
-//  - path leads to a file with .py extension
-//  - the file can be read and its contents are not empty
-fn validate_py_path(path: &Path) -> Result<(), String> {
-    // confirm path exists and is a file rather than a directory
-    if !path.exists() {
-        return Err("Path does not exist".to_owned());
-    }
-    if !path.is_file() {
-        return Err("Path does not lead to a file (maybe a directory?)".to_owned());
-    }
-
-    // file extension must be a .py
-    let expected_extension = OsStr::new("py");
-    match path.extension() {
-        Some(ext) => {
-            println!("file ext: {:?}", ext);
-            if ext == expected_extension {
-                Ok(())
-            } else {
-                Err("Invalid file extension".to_owned())
-            }
-        }
-        None => {
-            println!("c");
-            Err("path.extension() failed--maybe path does not have a period delimiting the extension?".to_owned())
-        }
+fn is_str_valid_filepath(s: &str) -> Result<(), Error> {
+    let path = Path::new(s);
+    match path.try_exists() {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(Error::new(ErrorKind::Other, "The file exists, but an error occured trying to access it")),
+        Err(e) => Err(e),
     }
 }
 
 fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
-    // Create a path to the desired file
-    println!("Opening file: {}", &file_name);
-    let path = Path::new(file_name);
-
-    // validate path
-    let path_validation = validate_py_path(&path);
-    if path_validation.is_err() {
-        return Err(Error::new(
-            ErrorKind::Other,
-            path_validation
-                .err()
-                .unwrap_or("Could not validate path".to_owned()),
-        ));
+    if let Err(e) = is_str_valid_filepath(&file_name) {
+        return Err(e);
     }
-
-    // try to open the file
-    let file = File::open(&path);
-
-    // match on file to examine result of open operation
-    let result: Result<String, Error> = match file {
+ 
+    match File::open(Path::new(file_name)) {
         Ok(mut file) => {
-            println!("File was opened successfully");
-
             // create a new String and read the file contents into it
             let mut s = String::new();
             file.read_to_string(&mut s)?;
 
-            // make sure file is not empty
+            // make sure string is not empty
             if s.is_empty() {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    String::from("Py file was empty..."),
-                ));
+                Err(Error::new(ErrorKind::UnexpectedEof,String::from("Py file was empty...")))
+            } else {
+                Ok(s)
             }
-            // finished inner actions for successful file read--return file content string inside Result
-            Ok(s.to_owned())
         }
         Err(e) => {
             println!("Failed to open file");
@@ -147,6 +96,5 @@ fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
             // finished inner actions for unsuccessful file read--return error inside Result
             Err(e)
         }
-    };
-    return result;
+    }
 }
