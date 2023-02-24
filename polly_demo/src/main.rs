@@ -11,21 +11,21 @@ use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
 
 // Input text
-const INPUT_TEXT:&str = "Happy Tuesday";
+const INPUT_TEXT:&str = "Welcome to Polly";
 
 fn main() {
     let s = String::from(INPUT_TEXT);
 
     println!("\nAWS Polly Example:");
-    let _r7c = match call_polly(s) {
-        Ok(n) => println!("\nPy Function was successful!! \nThe result was Ok({n:?}) \n"),
+    match call_polly(s) {
+        Ok(n) => println!("\nPy Function was successful!! \nThe result was: {n:?} \n"),
         Err(e) => println!("\nPy Function failed because {e}...\n"),
     };
 }
 
 // example function
 
-fn call_polly(text: String) -> Result<Option<bool>, Error> {
+fn call_polly(text: String) -> Result<Option<String>, Error> {
     // Initialize Python interpreter and acquire Global Interpreter Lock
     println!("\nInitializing py interpreter...");
     Python::with_gil(|py| {
@@ -43,11 +43,16 @@ fn call_polly(text: String) -> Result<Option<bool>, Error> {
             "\nEvaluating python code using args: {args:?}...\n-----start of py output-----\n"
         );
         match functions_pymodule?.getattr("polly_demo")?.call1(args) {
-            Ok(_) => {
+            Ok(p) => {
                 // python function completed successfully
                 println!("\n-----end of py output-----\n");
                 println!("polly_demo() function call succeeded");
-                return Ok(Some(true));
+                let path:&str = p.extract()?;
+                if path.is_empty() {
+                    return Ok(None);
+                } else {
+                    return Ok(Some(path.to_owned()));
+                }
             }
             Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
                 println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error");
