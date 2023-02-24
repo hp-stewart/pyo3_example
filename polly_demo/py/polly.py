@@ -9,12 +9,13 @@ from contextlib import closing
 import pathlib
 import subprocess
 
-def polly_demo(text):
+def polly_demo(text:str):
     print("Creating Speech from text using Polly")
     p = AmazonPolly()
     p.set_dialog(text)
     p.generate_audio()
     p.play_audio()
+    return p.output_audio_file
 
 class AmazonPolly():
     
@@ -54,6 +55,7 @@ class AmazonPolly():
             # Open a file for writing the output as a binary stream
                     with open(self.output_audio_file, "wb") as file:
                        file.write(stream.read())
+                       print("Success - audio file saved to ", self.output_audio_file)
                except IOError as error:
               # Could not write to file, exit gracefully
                   raise error
