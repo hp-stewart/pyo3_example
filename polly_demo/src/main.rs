@@ -38,10 +38,7 @@ fn call_polly(text: String) -> Result<String, Error> {
             Ok(p) => { // python function was completed successfully
                 println!("\n-----end of py output-----\npolly_demo() function call succeeded");
                 match p.extract::<String>() {
-                    Ok(p) => {
-                        let output_location = is_str_valid_filepath(&p)?.to_owned();
-                        return Ok(output_location);
-                    },
+                    Ok(p) => {return Ok(is_str_valid_filepath(&p)?.to_owned());},
                     Err(e) => {return Err(Error::new(ErrorKind::Other, e));},
                 };
             }
