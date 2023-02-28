@@ -4,6 +4,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::path::Path;
 use std::fs::File;
+use std::path::PathBuf;
 
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
@@ -25,7 +26,7 @@ fn main() {
     };
 }
 
-fn call_polly(text: String) -> Result<String, Error> {
+fn call_polly(text: String) -> Result<PathBuf, Error> {
     // Initialize Python interpreter and acquire Global Interpreter Lock
     println!("\nInitializing py interpreter...");
     Python::with_gil(|py| {
@@ -42,7 +43,7 @@ fn call_polly(text: String) -> Result<String, Error> {
             Ok(p) => { // python function was completed successfully
                 println!("\n-----end of py output-----\npolly_demo() function call succeeded");
                 match p.extract::<String>() {
-                    Ok(p) => {return Ok(is_str_valid_filepath(&p)?.to_owned());},
+                    Ok(p) => {return Ok(PathBuf::from(is_str_valid_filepath(&p)?));},
                     Err(e) => {return Err(Error::new(ErrorKind::Other, e));},
                 };
             }
@@ -56,16 +57,16 @@ fn call_polly(text: String) -> Result<String, Error> {
 }
 
 // helper functions
-fn is_str_valid_filepath(s: &str) -> Result<&str, Error> {
+fn is_str_valid_filepath(s: &str) -> Result<&Path, Error> {
     match Path::new(s).try_exists() {
-        Ok(true) => Ok(s),
+        Ok(true) => Ok(Path::new(s)),
         Ok(false) => Err(Error::new(ErrorKind::Other,"Could not access a file--check for broken symbolic link")),
         Err(e) => Err(e),
     }
 }
 
 fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
-    match File::open(Path::new(is_str_valid_filepath(file_name)?)) {
+    match File::open(is_str_valid_filepath(file_name)?) {
         Ok(mut file) => {
             // create a new String and read the file contents into it
             let mut s = String::new();
@@ -89,8 +90,8 @@ fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
     }
 }
 
-fn play_mp3_audio(mp3_path:&str) {
-    println!("\nPlaying audio from {mp3_path}");
+fn play_mp3_audio(mp3_path:&Path) {
+    println!("\nPlaying audio from {mp3_path:?}");
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
     let sink = rodio::Sink::try_new(&handle).unwrap();
     let file = std::fs::File::open(mp3_path).unwrap();
