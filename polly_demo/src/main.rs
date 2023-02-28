@@ -21,7 +21,6 @@ fn main() {
     };
 }
 
-// example function
 fn call_polly(text: String) -> Result<String, Error> {
     // Initialize Python interpreter and acquire Global Interpreter Lock
     println!("\nInitializing py interpreter...");
@@ -31,28 +30,35 @@ fn call_polly(text: String) -> Result<String, Error> {
         println!("\nPython code to evaluate:\n-----start of py code-----\n\n{code}\n\n-----end of py code-----");
 
         // attempt create PyModule from contents of file
-        // this module can be used to access individual functions separately
-        let functions_pymodule: Result<&PyModule, PyErr> =
-            PyModule::from_code(py, &code, "functions.py", "functions");
-
+        let functions_pymodule: Result<&PyModule, PyErr> = PyModule::from_code(py, &code, "functions.py", "functions");
         let args = PyTuple::new(py, &[text]);
-        println!(
-            "\nEvaluating python code using args: {args:?}...\n-----start of py output-----\n"
-        );
+        println!("\nEvaluating python code using args: {args:?}...\n-----start of py output-----\n");
+
         match functions_pymodule?.getattr("polly_demo")?.call1(args) {
             Ok(p) => {
                 // python function completed successfully
-                println!("\n-----end of py output-----\n");
-                println!("polly_demo() function call succeeded");
-                let output_path: String = p.extract()?;
-                return Ok(output_path);
+                println!("\n-----end of py output-----\npolly_demo() function call succeeded");
+                match p.extract::<String>() {
+                    Ok(path) => {
+                        // check that function output leads to a valid path; 
+                        if let Err(e) = is_str_valid_filepath(&path) {
+                            return Err(e); // no output file exists--report Err
+                        } else {
+                            return Ok(path.to_owned()); // output path leads to valid file
+                        }
+                    },
+                    Err(e) => {
+                        return Err(Error::new(ErrorKind::Other, e));
+                    },
+                };
             }
             Err(pyerr) if pyerr.is_instance_of::<PySyntaxError>(py) => {
                 println!("\nResult: ERR (InvalidInput) \nPython module could not be created due to syntax error");
                 return Err(Error::new(ErrorKind::InvalidInput, pyerr));
             }
             Err(e) => {
-                return Err(Error::new(ErrorKind::Other, e));}
+                return Err(Error::new(ErrorKind::Other, e));
+            }
         };
     })
 }
@@ -62,16 +68,14 @@ fn is_str_valid_filepath(s: &str) -> Result<(), Error> {
     let path = Path::new(s);
     match path.try_exists() {
         Ok(true) => Ok(()),
-        Ok(false) => Err(Error::new(ErrorKind::Other, "The file exists, but an error occured trying to access it")),
+        Ok(false) => Err(Error::new(ErrorKind::Other,"Could not access a file--check for broken symbolic link")),
         Err(e) => Err(e),
     }
 }
 
 fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
-    if let Err(e) = is_str_valid_filepath(&file_name) {
-        return Err(e);
-    }
- 
+    if let Err(e) = is_str_valid_filepath(&file_name) {return Err(e);}
+
     match File::open(Path::new(file_name)) {
         Ok(mut file) => {
             // create a new String and read the file contents into it
@@ -82,12 +86,11 @@ fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
             if s.is_empty() {
                 Err(Error::new(ErrorKind::UnexpectedEof,String::from("Py file was empty...")))
             } else {
-                Ok(s)
-            }
+                Ok(s)}
         }
         Err(e) => {
             println!("Failed to open file");
-            // can use match to create different behavior depending on what kind of error occcured
+            // can potentially use match to create different behavior depending on what kind of error occcured
             match e.kind() {
                 ErrorKind::NotFound => println!("File not Found"),
                 ErrorKind::PermissionDenied => println!("Permission Denied"),
