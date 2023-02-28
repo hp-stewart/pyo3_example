@@ -1,3 +1,4 @@
+use std::io::BufReader;
 use std::io::prelude::*;
 use std::io::Error;
 use std::io::ErrorKind;
@@ -10,13 +11,16 @@ use pyo3::types::PyTuple;
 use pyo3::exceptions::PySyntaxError;
 
 // Input text
-const INPUT_TEXT: &str = "Welcome to Polly";
+const INPUT_TEXT: &str = "Happy Tuesday";
 const PY_FILE: &str = "py/polly.py";
 
 fn main() {
     let s = String::from(INPUT_TEXT);
     match call_polly(s) {
-        Ok(n) => println!("\nPy Function was successful!! \nThe audio file was saved at: {n:?} \n"),
+        Ok(path) => {
+            println!("\nPy Function was successful!! \nThe audio file was saved at: {path:?} \n");
+            play_mp3_audio(&path);
+        },
         Err(e) => println!("\nPy Function failed because {e}...\n"),
     };
 }
@@ -83,4 +87,13 @@ fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
             Err(e)
         }
     }
+}
+
+fn play_mp3_audio(mp3_path:&str) {
+    println!("\nPlaying audio from {mp3_path}");
+    let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
+    let sink = rodio::Sink::try_new(&handle).unwrap();
+    let file = std::fs::File::open(mp3_path).unwrap();
+    sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+    sink.sleep_until_end();  
 }
