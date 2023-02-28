@@ -14,7 +14,7 @@ def polly_demo(text:str):
     p = AmazonPolly()
     p.set_dialog(text)
     p.generate_audio()
-    p.play_audio()
+    #p.play_audio()
     return p.output_audio_file_path
 
 class AmazonPolly():
