@@ -5,11 +5,13 @@ use std::io::ErrorKind;
 use std::path::Path;
 use std::fs::File;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use pyo3::prelude::*;
 use pyo3::types::PyModule;
 use pyo3::types::PyTuple;
 use pyo3::exceptions::PySyntaxError;
+
 
 // Input text
 const INPUT_TEXT: &str = "Happy Tuesday";
@@ -96,10 +98,27 @@ fn get_py_file_contents(file_name: &str) -> Result<String, Error> {
 }
 
 fn play_mp3_audio(mp3_path:&Path) {
+    use rodio::source::{SineWave, Source};
+
     println!("\nPlaying audio from {mp3_path:?}");
+    // create a handle to send output stream to speakers or other audio device
     let (_stream, handle) = rodio::OutputStream::try_default().unwrap();
-    let sink = rodio::Sink::try_new(&handle).unwrap();
+    
+    // load the audio file using path relative to cargo.toml
     let file = std::fs::File::open(mp3_path).unwrap();
-    sink.append(rodio::Decoder::new(BufReader::new(file)).unwrap());
+    
+    // Sink type represents an audio track and provides utilities such as play, pause, volume
+    let sink = rodio::Sink::try_new(&handle).unwrap();
+    
+    // Source trait can be implemented by a sine wave, a buffer, or a custom type
+    let source = SineWave::new(0.0).take_duration(Duration::from_secs_f32(0.25)).amplify(0.20);
+    sink.append(source);
+    
+    //Decode the sound file into a source
+    let source = rodio::Decoder::new(file).unwrap();
+    // let source = rodio::Decoder::new(BufReader::new(file)).unwrap();
+    
+    sink.append(source);
+    
     sink.sleep_until_end();  
 }
