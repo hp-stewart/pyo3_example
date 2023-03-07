@@ -16,6 +16,11 @@ const INPUT_TEXT: &str = "Happy Tuesday";
 const PY_FILE: &str = "py/polly.py";
 
 fn main() {
+    // test of play_mp3_audio() function
+    let p = Path::new("output.mp3");
+    play_mp3_audio(&p);
+
+    // test of call_polly() function
     let s = String::from(INPUT_TEXT);
     match call_polly(s) {
         Ok(path) => {
